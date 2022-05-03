@@ -1,0 +1,9 @@
+❌ Command Error: error fetching block: client: rpc error: code = Unavailable desc = failed to receive server preface within timeoutGet block Error: 
+
+
+Traceback (most recent call last):
+  File "flow_get_block.py", line 71, in <module>
+    item_row = get_block(height)
+  File "flow_get_block.py", line 60, in get_block
+    ret = [block_id, parent_id, timestamp, height, total_seals, collection_cnt]
+UnboundLocalError: local variable 'timestamp' referenced before assignment
