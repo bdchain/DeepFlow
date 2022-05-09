@@ -34,14 +34,15 @@ async def retrieve_block_from_latest(root_height: int):
     ) as client:
 
         latest_block = await client.get_latest_block()
-        latest_height = latest_block.height - 10
+        latest_height = latest_block.height - 100
 
 
         print(f"Start fetching block data from height {latest_height}")
+        print(f"Target height(root height): {root_height}", flush=True)
         MAX_TRIAL_CNT = 3
         for height in range(latest_height, root_height-1, -1):
             block = await client.get_block_by_height(height=height)
-            # SQL_CHECK(insert_block(block))
+            SQL_CHECK(insert_block(block))
             col_guarantees = block.collection_guarantees
             tx_ids = []
             for j in range(len(col_guarantees)):
@@ -56,7 +57,9 @@ async def retrieve_block_from_latest(root_height: int):
                 # for event in tx_result.events:
                 #     SQL_CHECK(insert_event(event))
                 SQL_CHECK(insert_events(tx_result.events))
-                pass
+            
+            if height % 1000 == 0:
+                print(f"Block {height} fetched and processed!", flush=True)
 
                 
 

@@ -1,7 +1,7 @@
 import os
 import json
 
-flow_repo_dir = "rpc/flow/"
+flow_repo_dir = "flow/"
 
 def parse_spork_from_file():
     json_file = os.path.join(flow_repo_dir, "sporks.json")
