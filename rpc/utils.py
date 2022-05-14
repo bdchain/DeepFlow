@@ -1,5 +1,17 @@
 import os
 import json
+from typing import List
+from flow_py_sdk.client import entities
+
+class BlockSet():
+    def __init__(self):
+        self.block: entities.Block = None
+        self.collections: List[entities.Collection] = []
+        self.tx_ids: List[bytes] = []
+        self.txs: List[entities.Transaction] = []
+        self.tx_results: List[entities.TransactionResultResponse] = []
+        self.events: List[entities.Event] = []
+
 
 flow_repo_dir = "flow/"
 

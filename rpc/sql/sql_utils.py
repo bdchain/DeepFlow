@@ -17,7 +17,7 @@ import platform
 #数据库
 #带选择数据库功能
 node = platform.node()
-online_nodes = ["iZj6caepkkeb02tyfqq0u1Z"] #线上服务器列表
+online_nodes = [] #线上服务器列表
 
 if node == "n1.appbk.com":
     g_db_host = "127.0.0.1" #线上机器
@@ -32,9 +32,9 @@ elif node in online_nodes: #线上服务器
     g_db_name = "flow" #数据库名
     g_db_port = 3306
 else: #测试服务器
-    g_db_host = "8.210.160.166" #线上机器
+    g_db_host = "127.0.0.1" #线上机器
     g_db_user = "root"
-    g_db_pw = "Rootali1"
+    g_db_pw = "Rootali123!@#"
     g_db_name = "flow" #数据库名
     g_db_port = 1891
 
@@ -252,8 +252,12 @@ def insert_data_list(data_list, table_name, db_name=g_db_name):
         value_args_list.append(value_tuple)
 
     #执行剩余的数据
-    cursor.executemany(sql_com,value_args_list)
-    db.commit()
+    try:
+        cursor.executemany(sql_com,value_args_list)
+        db.commit()
+    except Exception as e:
+        error_info = 'insert error: ' + str(e)
+        print("ERROR", error_info)
     db.close()
     return 0
 
