@@ -31,6 +31,12 @@ elif node in online_nodes: #线上服务器
     g_db_pw = "Rootali123!@#"
     g_db_name = "flow" #数据库名
     g_db_port = 3306
+elif node == "VM-16-10-centos":
+    g_db_host = "127.0.0.1" #线上机器
+    g_db_user = "root"
+    g_db_pw = "Rootali123!@#"
+    g_db_name = "flow" #数据库名
+    g_db_port = 3306
 else: #测试服务器
     g_db_host = "127.0.0.1" #线上机器
     g_db_user = "root"

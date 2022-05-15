@@ -156,4 +156,7 @@ if __name__ == "__main__":
         )
     )
     t_insert.join()
+    
     # asyncio.run(retrieve_block_from_latest(sporks[-1][0]))
+
+    # truncate_all_tables()
