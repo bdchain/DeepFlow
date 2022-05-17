@@ -11,28 +11,9 @@ from utils import *
 
 is_fetching: bool = True
 insert_q = queue.Queue()
-
-async def test():
-    async with flow_client(
-            host="access.mainnet.nodes.onflow.org", port=9000
-    ) as client:
-
-        transaction_id = bytes.fromhex("b0b6765eff4bc4960f01fdd6521a2e7f7a4847ba4a771fd1f678cc4eb831414f")
-        transaction = await client.get_transaction(id=transaction_id)
-        print("transaction ID: {}".format(transaction_id.hex()))
-        print("transaction payer: {}".format(transaction.payer.hex()))
-        print("transaction authorizers: {}".format(transaction.authorizers))
-        print("transaction proposal_key: {}".format(transaction.proposal_key))
-
-        print("transaction proposer: {}".format(
-                transaction.proposal_key.address.hex()
-            )
-        )
-
-        print("transaction arguments: {}".format(transaction.arguments))
-
-
-        print("transaction script: {}".format(transaction.script.decode("utf-8")))
+g_curr_height: int
+g_end_height: int
+g_access_node: str
 
 
 async def retrieve_block_from_latest(root_height: int):
@@ -109,6 +90,44 @@ async def retrieve_block_by_range(start_height: int, end_height: int, access_nod
                 print(f"Block {height} fetched and processed!", flush=True)
 
 
+async def retrieve_block_multitask():
+    global g_curr_height
+    global g_end_height
+    global g_access_node
+    global insert_q
+    access_host, access_port = g_access_node.split(':')
+    access_port = int(access_port)
+    async with flow_client(
+        host=access_host, port=access_port
+    ) as client:
+
+        while g_curr_height < g_end_height:
+            height = g_curr_height
+            g_curr_height += 1
+            block_set = BlockSet()
+            block = await client.get_block_by_height(height=height)
+            block_set.block = block
+            col_guarantees = block.collection_guarantees
+            tx_ids = []
+            for j in range(len(col_guarantees)):
+                collection_id = col_guarantees[j].collection_id
+                collection = await client.get_collection_by_i_d(id=collection_id)
+                block_set.collections.append(collection)
+                tx_ids += collection.transaction_ids
+
+            block_set.tx_ids = tx_ids
+            for tx_id in tx_ids:
+                tx = await client.get_transaction(id=tx_id)
+                block_set.txs.append(tx)
+                tx_result = await client.get_transaction_result(id=tx_id)
+                block_set.tx_results.append(tx_result)
+                block_set.events += tx_result.events
+            
+            insert_q.put(block_set)
+            if height % 1000 == 0:
+                print(f"Block {height} fetched and processed!", flush=True)
+
+
 def insert_block_set(block_set: BlockSet):
     SQL_CHECK(insert_block(block_set.block))
     SQL_CHECK(insert_collections(block_set.collections))
@@ -142,21 +161,47 @@ def insert_data_loop():
     print(f"Inserting loop finished!")
 
 
+def set_global(start_height, end_height, access_node):
+    global g_curr_height
+    global g_end_height
+    global g_access_node
+    g_curr_height = start_height
+    g_end_height = end_height
+    g_access_node = access_node
+
+
 if __name__ == "__main__":
     mainnet_idx = int(sys.argv[1])
-    sporks = parse_spork_from_file()
+    # sporks = parse_spork_from_file()
 
     t_insert = threading.Thread(target=insert_data_loop)
     t_insert.start()
-    asyncio.run(
-        retrieve_block_by_range(
-            sporks[mainnet_idx][0], 
-            sporks[mainnet_idx+1][0], 
-            sporks[mainnet_idx][1]
-        )
-    )
-    t_insert.join()
+    # asyncio.run(
+    #     retrieve_block_by_range(
+    #         sporks[mainnet_idx][0], 
+    #         sporks[mainnet_idx+1][0], 
+    #         sporks[mainnet_idx][1]
+    #     )
+    # )
+    # t_insert.join()
     
     # asyncio.run(retrieve_block_from_latest(sporks[-1][0]))
 
     # truncate_all_tables()
+
+
+    # curr_height = sporks[mainnet_idx][0]
+    # end_height = sporks[mainnet_idx+1][0]
+    # access_node = sporks[mainnet_idx][1]
+    set_global(8742959, 9737133, "access-001.mainnet2.nodes.onflow.org:9000")
+
+    task_list = [
+        retrieve_block_multitask(),
+        retrieve_block_multitask(),
+        retrieve_block_multitask(),
+        retrieve_block_multitask(),
+        retrieve_block_multitask()
+    ]
+
+    asyncio.run(asyncio.wait(task_list))
+
