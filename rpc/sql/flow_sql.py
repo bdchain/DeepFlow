@@ -253,7 +253,7 @@ def truncate_all_tables():
 
 def create_all_tables():
     sql_utils.mysql_com(
-        f"CREATE TABLE \`{block_table_default}\`  ("
+        f"CREATE TABLE `{block_table_default}`  ("
         r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
         r"    `height` int UNSIGNED NOT NULL,"
         r"    `block_id` char(64) NOT NULL,"
@@ -269,7 +269,7 @@ def create_all_tables():
     )
 
     sql_utils.mysql_com(
-        f"CREATE TABLE \`{collection_table_default}\`  ("
+        f"CREATE TABLE `{collection_table_default}`  ("
         r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
         r"    `collection_id` char(64) NOT NULL,"
         r"    `tx_ids` json NOT NULL,"
@@ -279,7 +279,7 @@ def create_all_tables():
     )
 
     sql_utils.mysql_com(
-        f"CREATE TABLE \`{tx_table_default}\`  ("
+        f"CREATE TABLE `{tx_table_default}`  ("
         r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
         r"    `tx_id` char(64) NOT NULL,"
         r"    `script` text NOT NULL,"
@@ -300,7 +300,7 @@ def create_all_tables():
     )
 
     sql_utils.mysql_com(
-        f"CREATE TABLE \`{event_table_default}\`  ("
+        f"CREATE TABLE `{event_table_default}`  ("
         r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
         r"    `type` varchar(255) NOT NULL,"
         r"    `tx_id` char(64) NOT NULL,"

@@ -1,3 +1,4 @@
+from os import access
 import sys
 import queue
 import time
@@ -95,6 +96,7 @@ async def retrieve_block_multitask():
     global g_end_height
     global g_access_node
     global insert_q
+    global is_fetching
     access_host, access_port = g_access_node.split(':')
     access_port = int(access_port)
     async with flow_client(
@@ -127,6 +129,9 @@ async def retrieve_block_multitask():
             if height % 1000 == 0:
                 print(f"Block {height} fetched and processed!", flush=True)
 
+        print(f"One block retrieving task accomplished!")
+        is_fetching = False
+
 
 def insert_block_set(block_set: BlockSet):
     SQL_CHECK(insert_block(block_set.block))
@@ -152,6 +157,8 @@ def insert_data_loop():
     while is_fetching:
         if insert_q.empty():
             time.sleep(0.1)
+            if not is_fetching:
+                break
         else:
             block_set: BlockSet = insert_q.get()
             insert_block_set(block_set)
@@ -172,7 +179,7 @@ def set_global(start_height, end_height, access_node):
 
 if __name__ == "__main__":
     mainnet_idx = int(sys.argv[1])
-    # sporks = parse_spork_from_file()
+    sporks = parse_spork_from_file()
 
     t_insert = threading.Thread(target=insert_data_loop)
     t_insert.start()
@@ -188,14 +195,18 @@ if __name__ == "__main__":
     # asyncio.run(retrieve_block_from_latest(sporks[-1][0]))
 
     # truncate_all_tables()
+    # create_all_tables()
+    # drop_all_tables()
 
-
-    # curr_height = sporks[mainnet_idx][0]
-    # end_height = sporks[mainnet_idx+1][0]
-    # access_node = sporks[mainnet_idx][1]
-    set_global(8742959, 9737133, "access-001.mainnet2.nodes.onflow.org:9000")
+    curr_height = sporks[mainnet_idx][0]
+    end_height = sporks[mainnet_idx+1][0]
+    access_node = sporks[mainnet_idx][1]
+    set_global(curr_height, end_height, access_node)
 
     task_list = [
+        retrieve_block_multitask(),
+        retrieve_block_multitask(),
+        retrieve_block_multitask(),
         retrieve_block_multitask(),
         retrieve_block_multitask(),
         retrieve_block_multitask(),
@@ -204,4 +215,4 @@ if __name__ == "__main__":
     ]
 
     asyncio.run(asyncio.wait(task_list))
-
+    t_insert.join()
