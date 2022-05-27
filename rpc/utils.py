@@ -11,6 +11,8 @@ class BlockSet():
         self.txs: List[entities.Transaction] = []
         self.tx_results: List[entities.TransactionResultResponse] = []
         self.events: List[entities.Event] = []
+        
+        self.custom = None
 
 
 flow_repo_dir = "flow/"
