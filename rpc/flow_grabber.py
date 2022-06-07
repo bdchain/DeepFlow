@@ -131,14 +131,32 @@ class Grabber():
         # ]
         table_range = self.__calc_table_block_range()
         print(f"table range division: {table_range}")
-        for i in range(len(table_range) - 1):
-            self.__create_tables(i)
-            self.curr_height = table_range[i]
-            target_height = table_range[i+1]
-            task_list = [self.__retrieve_block_multitask(target_height, i) \
-                for _ in range(self._coroutine_num)]
-            asyncio.run(asyncio.wait(task_list))
-            print(f"block division {i} complete.")
+        # for i in range(len(table_range) - 1):
+        #     self.__create_tables(i)
+        #     self.curr_height = table_range[i]
+        #     target_height = table_range[i+1]
+        #     task_list = [self.__retrieve_block_multitask(target_height, i) \
+        #         for _ in range(self._coroutine_num)]
+        #     asyncio.run(asyncio.wait(task_list))
+        #     print(f"block division {i} complete.")
+
+        i: int = 0
+        while i < len(table_range) - 1:
+            try:
+                self.__create_tables(i)
+                self.curr_height = table_range[i]
+                target_height = table_range[i+1]
+                task_list = [self.__retrieve_block_multitask(target_height, i) \
+                    for _ in range(self._coroutine_num)]
+                asyncio.run(asyncio.wait(task_list))
+            except Exception as e:
+                print(f"Grabbing Error: {e}, division index: {i}, curr_height: {self.curr_height}")
+                self.__drop_tables(i)
+                print(f"Drop division {i} and regrabbing!")
+            else:
+                print(f"Grab block division {i} complete!")
+                i += 1
+
 
         self.is_fetching = False
         t_insert.join()
@@ -149,6 +167,12 @@ class Grabber():
         create_collection_table (f"collections_{self.mainnet_idx}_{table_id}")
         create_transaction_table(f"transactions_{self.mainnet_idx}_{table_id}")
         create_event_table      (f"events_{self.mainnet_idx}_{table_id}")
+
+    def __drop_tables(self, table_id: int):
+        drop_table(f"blocks_{self.mainnet_idx}_{table_id}")
+        drop_table(f"collections_{self.mainnet_idx}_{table_id}")
+        drop_table(f"transactions_{self.mainnet_idx}_{table_id}")
+        drop_table(f"events_{self.mainnet_idx}_{table_id}")
 
 
     def __calc_table_block_range(self) -> List[int]:

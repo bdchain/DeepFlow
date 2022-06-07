@@ -250,6 +250,9 @@ def truncate_all_tables():
     sql_utils.mysql_com(f"TRUNCATE {collection_table_default};")
     sql_utils.mysql_com(f"TRUNCATE {block_table_default};")
 
+def truncate_table(table_name: str):
+    sql_utils.mysql_com(f"TRUNCATE {table_name};")
+
 
 def create_block_table(table_name: str):
     sql_utils.mysql_com(
