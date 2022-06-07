@@ -108,10 +108,10 @@ class Grabber():
 
     def set_coroutine_num(self, coroutine_num):
         if coroutine_num < 1:
-            print("Coroutin number for grabbing task no less than 1")
+            print("Coroutin number for grabbing task no less than 1", flush=True)
             return
         elif coroutine_num > 24:
-            print("Using too many coroutine for fetching task is not suggested!")
+            print("Using too many coroutine for fetching task is not suggested!", flush=True)
         self.coroutine_num = coroutine_num
         
     @property
@@ -130,7 +130,7 @@ class Grabber():
         #     self.__retrieve_block_multitask()
         # ]
         table_range = self.__calc_table_block_range()
-        print(f"table range division: {table_range}")
+        print(f"table range division: {table_range}", flush=True)
         # for i in range(len(table_range) - 1):
         #     self.__create_tables(i)
         #     self.curr_height = table_range[i]
@@ -206,29 +206,37 @@ class Grabber():
                 self.curr_height += 1
                 block_set = BlockSet()
                 block_set.custom = table_id
-                block = await client.get_block_by_height(height=height)
-                block_set.block = block
-                col_guarantees = block.collection_guarantees
-                tx_ids = []
-                for j in range(len(col_guarantees)):
-                    collection_id = col_guarantees[j].collection_id
-                    collection = await client.get_collection_by_i_d(id=collection_id)
-                    block_set.collections.append(collection)
-                    tx_ids += collection.transaction_ids
 
-                block_set.tx_ids = tx_ids
-                for tx_id in tx_ids:
-                    tx = await client.get_transaction(id=tx_id)
-                    block_set.txs.append(tx)
-                    tx_result = await client.get_transaction_result(id=tx_id)
-                    block_set.tx_results.append(tx_result)
-                    block_set.events += tx_result.events
-                
+                while True:
+                    try:
+                        block = await client.get_block_by_height(height=height)
+                        block_set.block = block
+                        col_guarantees = block.collection_guarantees
+                        tx_ids = []
+                        for j in range(len(col_guarantees)):
+                            collection_id = col_guarantees[j].collection_id
+                            collection = await client.get_collection_by_i_d(id=collection_id)
+                            block_set.collections.append(collection)
+                            tx_ids += collection.transaction_ids
+
+                        block_set.tx_ids = tx_ids
+                        for tx_id in tx_ids:
+                            tx = await client.get_transaction(id=tx_id)
+                            block_set.txs.append(tx)
+                            tx_result = await client.get_transaction_result(id=tx_id)
+                            block_set.tx_results.append(tx_result)
+                            block_set.events += tx_result.events
+                    except Exception as e:
+                        print(f"Grabbing Error, curr height: {height}. Retry.", flush=True)
+                        print(e)
+                    else:
+                        break
+         
                 self.insert_q.put(block_set)
                 if height % 1000 == 0:
                     print(f"Block {height} fetched and processed!", flush=True)
 
-            print(f"One block retrieving coroutine accomplished!")
+            print(f"One block retrieving coroutine accomplished!", flush=True)
 
 
     def __insert_block_set(self, block_set: BlockSet, table_id: int):
