@@ -253,6 +253,17 @@ def truncate_all_tables():
 def truncate_table(table_name: str):
     sql_utils.mysql_com(f"TRUNCATE {table_name};")
 
+def create_contract_table():
+    sql_utils.mysql_com(
+        f"CREATE TABLE `contracts`  ("
+        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+        r"    `name` varchar(255) NOT NULL,"
+        r"    `address` char(16) NOT NULL,"
+        r"    `code` text NOT NULL,"
+        r"    PRIMARY KEY (`id`)"
+        r");"
+    )
+
 
 def create_block_table(table_name: str):
     sql_utils.mysql_com(
