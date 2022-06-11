@@ -24,9 +24,10 @@ from flow_py_sdk import flow_client
 #         print(f"name: {pair}, code: {code}")
 # asyncio.run(test())
 
-# create_contract_table()
+create_contract_table()
 
 async def traverse_event_record_contract():
+    recorded_addrs = set()
 
     client = flow_client("access.mainnet.nodes.onflow.org", 9000)
     tables = sql_utils.mysql_com(f"show tables;")
@@ -52,6 +53,10 @@ async def traverse_event_record_contract():
                 if components[0] != "A":
                     continue
                 addr = components[1]
+                if addr in recorded_addrs:
+                    continue
+                else:
+                    recorded_addrs.add(addr)
 
                 sql_comm = f"select * from contracts where address='{addr}' limit 1;"
                 recorded = sql_utils.mysql_com(sql_comm)
