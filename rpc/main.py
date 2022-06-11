@@ -25,4 +25,5 @@ if __name__ == "__main__":
     end_height = sporks[mainnet_idx+1][0]
     access_node = sporks[mainnet_idx][1]
     grabber = Grabber(mainnet_idx, start_height, end_height, access_node)
+    grabber.coroutine_num = 12
     grabber.run()

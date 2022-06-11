@@ -104,19 +104,20 @@ class Grabber():
         self.is_fetching:  bool        = False
 
         self._block_num_per_table: int = 50000
-        self._coroutine_num: int = 8
+        self.coroutine_num: int = 8
 
-    def set_coroutine_num(self, coroutine_num):
-        if coroutine_num < 1:
-            print("Coroutin number for grabbing task no less than 1", flush=True)
-            return
-        elif coroutine_num > 24:
-            print("Using too many coroutine for fetching task is not suggested!", flush=True)
-        self.coroutine_num = coroutine_num
+    # @coroutine_num.setter
+    # def set_coroutine_num(self, coroutine_num):
+    #     if coroutine_num < 1:
+    #         print("Coroutin number for grabbing task no less than 1", flush=True)
+    #         return
+    #     elif coroutine_num > 24:
+    #         print("Using too many coroutine for fetching task is not suggested!", flush=True)
+    #     self.coroutine_num = coroutine_num
         
-    @property
-    def coroutine_num(self):
-        return self._coroutine_num
+    # @property
+    # def coroutine_num(self):
+    #     return self.coroutine_num
 
 
     def run(self):
@@ -136,7 +137,7 @@ class Grabber():
         #     self.curr_height = table_range[i]
         #     target_height = table_range[i+1]
         #     task_list = [self.__retrieve_block_multitask(target_height, i) \
-        #         for _ in range(self._coroutine_num)]
+        #         for _ in range(self.coroutine_num)]
         #     asyncio.run(asyncio.wait(task_list))
         #     print(f"block division {i} complete.")
 
@@ -147,7 +148,7 @@ class Grabber():
                 self.curr_height = table_range[i]
                 target_height = table_range[i+1]
                 task_list = [self.__retrieve_block_multitask(target_height, i) \
-                    for _ in range(self._coroutine_num)]
+                    for _ in range(self.coroutine_num)]
                 asyncio.run(asyncio.wait(task_list))
             except Exception as e:
                 print(f"Grabbing Error: {e}, division index: {i}, curr_height: {self.curr_height}")
@@ -196,6 +197,7 @@ class Grabber():
     async def __retrieve_block_multitask(self, target_height, table_id):
         access_host, access_port = self.access_node.split(':')
         access_port = int(access_port)
+        print(f"host: {access_host}, port: {access_port}")
         async with flow_client(
             host=access_host, port=access_port
         ) as client:
@@ -206,8 +208,15 @@ class Grabber():
                 self.curr_height += 1
                 block_set = BlockSet()
                 block_set.custom = table_id
+                complete_block = False
 
+                try_cnt = 0
                 while True:
+                    if try_cnt > 5:
+                        print(f"Failed to fetch block {height}")
+                        print(f"block id: {block_set.block.id.hex()}")
+                        break
+                    try_cnt += 1
                     try:
                         block = await client.get_block_by_height(height=height)
                         block_set.block = block
@@ -230,9 +239,10 @@ class Grabber():
                         print(f"Grabbing Error, curr height: {height}. Retry.", flush=True)
                         print(e)
                     else:
+                        complete_block = True
                         break
-         
-                self.insert_q.put(block_set)
+                if complete_block:
+                    self.insert_q.put(block_set)
                 if height % 1000 == 0:
                     print(f"Block {height} fetched and processed!", flush=True)
 

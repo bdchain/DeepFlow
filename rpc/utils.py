@@ -35,6 +35,8 @@ def parse_spork_from_file():
         elif "accessNode" in node:
             access_node = node["accessNode"][0]
         sporks.append((root_height, access_node))
+    sporks[-1] = (sporks[-1][0], "access.mainnet.nodes.onflow.org:9000")
+    sporks.append((32000000, "access.mainnet.nodes.onflow.org:9000"))
 
     return sporks
 
