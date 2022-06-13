@@ -198,55 +198,60 @@ class Grabber():
         access_host, access_port = self.access_node.split(':')
         access_port = int(access_port)
         print(f"host: {access_host}, port: {access_port}")
-        async with flow_client(
-            host=access_host, port=access_port
-        ) as client:
+        # async with flow_client(
+        #     host=access_host, port=access_port
+        # ) as client:
+        client = flow_client(host=access_host, port=access_port)
 
-            while self.curr_height < target_height:
+        while self.curr_height < target_height:
 
-                height = self.curr_height
-                self.curr_height += 1
-                block_set = BlockSet()
-                block_set.custom = table_id
-                complete_block = False
+            height = self.curr_height
+            self.curr_height += 1
+            block_set = BlockSet()
+            block_set.custom = table_id
+            complete_block = False
 
-                try_cnt = 0
-                while True:
-                    if try_cnt > 5:
-                        print(f"Failed to fetch block {height}")
-                        print(f"block id: {block_set.block.id.hex()}")
-                        break
-                    try_cnt += 1
-                    try:
-                        block = await client.get_block_by_height(height=height)
-                        block_set.block = block
-                        col_guarantees = block.collection_guarantees
-                        tx_ids = []
-                        for j in range(len(col_guarantees)):
-                            collection_id = col_guarantees[j].collection_id
-                            collection = await client.get_collection_by_i_d(id=collection_id)
-                            block_set.collections.append(collection)
-                            tx_ids += collection.transaction_ids
+            try_cnt = 0
+            while try_cnt < 15:
+                if try_cnt % 3 == 2:
+                    print(f"Failed too many times. Reconnect to access host.")
+                    client.channel.close()
+                    client = flow_client(host=access_host, port=access_port)
+                try_cnt += 1
+                
+                try:
+                    block = await client.get_block_by_height(height=height)
+                    block_set.block = block
+                    col_guarantees = block.collection_guarantees
+                    tx_ids = []
+                    for j in range(len(col_guarantees)):
+                        collection_id = col_guarantees[j].collection_id
+                        collection = await client.get_collection_by_i_d(id=collection_id)
+                        block_set.collections.append(collection)
+                        tx_ids += collection.transaction_ids
 
-                        block_set.tx_ids = tx_ids
-                        for tx_id in tx_ids:
-                            tx = await client.get_transaction(id=tx_id)
-                            block_set.txs.append(tx)
-                            tx_result = await client.get_transaction_result(id=tx_id)
-                            block_set.tx_results.append(tx_result)
-                            block_set.events += tx_result.events
-                    except Exception as e:
-                        print(f"Grabbing Error, curr height: {height}. Retry.", flush=True)
-                        print(e)
-                    else:
-                        complete_block = True
-                        break
-                if complete_block:
-                    self.insert_q.put(block_set)
-                if height % 1000 == 0:
-                    print(f"Block {height} fetched and processed!", flush=True)
+                    block_set.tx_ids = tx_ids
+                    for tx_id in tx_ids:
+                        tx = await client.get_transaction(id=tx_id)
+                        block_set.txs.append(tx)
+                        tx_result = await client.get_transaction_result(id=tx_id)
+                        block_set.tx_results.append(tx_result)
+                        block_set.events += tx_result.events
+                except Exception as e:
+                    print(f"Grabbing Error, curr height: {height}. Retry.", flush=True)
+                    print(e)
+                else:
+                    complete_block = True
+                    break
+            if complete_block:
+                self.insert_q.put(block_set)
+            else:
+                print(f"ERROR!!! Failed to fetch block {height}")
+                print(f"block id: {block_set.block.id.hex()}")
+            if height % 1000 == 0:
+                print(f"Block {height} fetched and processed!", flush=True)
 
-            print(f"One block retrieving coroutine accomplished!", flush=True)
+        print(f"One block retrieving coroutine accomplished!", flush=True)
 
 
     def __insert_block_set(self, block_set: BlockSet, table_id: int):
