@@ -213,7 +213,7 @@ class Grabber():
 
             try_cnt = 0
             while try_cnt < 15:
-                if try_cnt % 3 == 0:
+                if try_cnt % 3 == 2:
                     print(f"Failed too many times. Reconnect to access host.")
                     client.channel.close()
                     client = flow_client(host=access_host, port=access_port)
