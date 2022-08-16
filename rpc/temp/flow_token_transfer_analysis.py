@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append("/data2/DeepFlow/rpc")
+sys.path.append("/data/charles/deep_flow/rpc")
 sys.path.append(os.getcwd())
 import json
 from sql.flow_sql import *
@@ -11,23 +11,28 @@ from html import entities
 import flow_py_sdk
 from flow_py_sdk import flow_client
 
+
 # create table
 table_name = "flow_token_transfer"
-sql_utils.mysql_com(
-    f"CREATE TABLE `{table_name}`  ("
-    r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-    r"    `height` int UNSIGNED NOT NULL,"
-    r"    `tx_id` char(64) NOT NULL,"
-    r"    `proposer` char(16) NOT NULL,"
-    r"    `send` json NOT NULL,"
-    r"    `receive` json NOT NULL,"
-    r"    PRIMARY KEY (`id`)"
-    r");"
-)
+if has_table(table_name):
+    sql_utils.mysql_com(f"truncate `{table_name}`;")
+else:
+    sql_utils.mysql_com(
+        f"CREATE TABLE `{table_name}`  ("
+        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+        r"    `height` int UNSIGNED NOT NULL,"
+        r"    `tx_id` char(64) NOT NULL,"
+        r"    `proposer` char(16) NOT NULL,"
+        r"    `send` json NOT NULL,"
+        r"    `receive` json NOT NULL,"
+        r"    PRIMARY KEY (`id`),"
+        r"    UNIQUE INDEX `uniq_tx_id`(`tx_id`)"
+        r");"
+    )
 
 # data in [6.12, 6.19)
-block_range = (31488850, 31488850)
-# table_idx = {17: [82, 83, 84, 85, 86, 87, 88], 18: [0, 1]}
+block_range = (31488850, 32488850)
+# table_idx = {17: [82, 83, 84, 85, 86, 87], 18: [0, 1]}
 table_idx = {18: [0]}
 
 for spork in table_idx:
@@ -47,7 +52,7 @@ for spork in table_idx:
             guarantees = json.loads(cols_raw)["collection_guarantees"]
             for guarantee in guarantees:
                 col_id = guarantee["collection_id"]
-                col_entries = sql_utils(
+                col_entries = sql_utils.mysql_com(
                     f"select tx_ids from {col_table} where collection_id='{col_id}';"
                 )
                 assert len(col_entries) == 1
@@ -74,14 +79,24 @@ for spork in table_idx:
                         fields = payload["fields"]
                         if etype == "A.1654653399040a61.FlowToken.TokensDeposited":
                             assert fields[0]["name"] == "amount" and fields[1]["name"] == "to"
-                            amount = fields[0]['value']['value']
+                            amount = float(fields[0]['value']['value'])
+                            if fields[1]["value"]["value"] is None:
+                                continue
                             addr = fields[1]['value']['value']['value']
-                            receive[addr] = amount
+                            if addr in receive:
+                                receive[addr] += amount
+                            else:
+                                receive[addr] = amount
                         elif etype == "A.1654653399040a61.FlowToken.TokensWithdrawn":
                             assert fields[0]["name"] == "amount" and fields[1]["name"] == "from"
-                            amount = fields[0]["value"]["value"]
+                            amount = float(fields[0]["value"]["value"])
+                            if fields[1]["value"]["value"] is None:
+                                continue
                             addr = fields[1]["value"]["value"]["value"]
-                            send[addr] = amount
+                            if addr in send:
+                                send[addr] += amount
+                            else:
+                                send[addr] = amount
                     
                     entry = {}
                     entry["height"] = height

@@ -24,7 +24,7 @@ from flow_py_sdk import flow_client
 #         print(f"name: {pair}, code: {code}")
 # asyncio.run(test())
 
-create_contract_table()
+# create_contract_table()
 
 async def traverse_event_record_contract():
     recorded_addrs = set()

@@ -93,18 +93,20 @@ class Grabber():
             start_height: int,
             end_height: int,
             access_node: str,
-            max_insert_q_size: int = 1000
+            max_insert_q_size: int = 1000,
+            skip_to_division: int = 0
         ):
-        self.insert_q:     queue.Queue = queue.Queue(max_insert_q_size)
-        self.mainnet_idx:  int         = mainnet_idx
-        self.start_height: int         = start_height
-        self.end_height:   int         = end_height
-        self.curr_height:  int         = start_height
-        self.access_node:  str         = access_node 
-        self.is_fetching:  bool        = False
+        self.mainnet_idx:      int         = mainnet_idx
+        self.start_height:     int         = start_height
+        self.end_height:       int         = end_height
+        self.curr_height:      int         = start_height
+        self.access_node:      str         = access_node 
+        self.is_fetching:      bool        = False
+        self.skip_to_division: int         = skip_to_division
+        self.insert_q:         queue.Queue = queue.Queue(max_insert_q_size)
 
         self._block_num_per_table: int = 50000
-        self.coroutine_num: int = 8
+        self.coroutine_num:        int = 8
 
     # @coroutine_num.setter
     # def set_coroutine_num(self, coroutine_num):
@@ -141,7 +143,7 @@ class Grabber():
         #     asyncio.run(asyncio.wait(task_list))
         #     print(f"block division {i} complete.")
 
-        i: int = 0
+        i: int = self.skip_to_division
         while i < len(table_range) - 1:
             try:
                 self.__create_tables(i)

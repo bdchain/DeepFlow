@@ -244,6 +244,12 @@ def insert_events(
     return insert_id
 
 
+def has_table(table_name: str):
+    show_tables_res = sql_utils.mysql_com("show tables;")
+    exist_tables = [list(d.values())[0] for d in show_tables_res]
+    return table_name in exist_tables    
+
+
 def truncate_all_tables():
     sql_utils.mysql_com(f"TRUNCATE {event_table_default};")
     sql_utils.mysql_com(f"TRUNCATE {tx_table_default};")
@@ -254,147 +260,175 @@ def truncate_table(table_name: str):
     sql_utils.mysql_com(f"TRUNCATE {table_name};")
 
 def create_contract_table():
-    sql_utils.mysql_com(
-        f"CREATE TABLE `contracts`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `name` varchar(255) NOT NULL,"
-        r"    `address` char(16) NOT NULL,"
-        r"    `code` text NOT NULL,"
-        r"    PRIMARY KEY (`id`)"
-        r");"
-    )
+    table_name = "contracts"
+    if has_table(table_name):
+        sql_utils.mysql_com(f"truncate `{table_name}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{table_name}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `name` varchar(255) NOT NULL,"
+            r"    `address` char(16) NOT NULL,"
+            r"    `code` text NOT NULL,"
+            r"    PRIMARY KEY (`id`)"
+            r");"
+        )
 
 
 def create_block_table(table_name: str):
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{table_name}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `height` int UNSIGNED NOT NULL,"
-        r"    `block_id` char(64) NOT NULL,"
-        r"    `parent_id` char(64) NOT NULL,"
-        r"    `timestamp` double NOT NULL,"
-        r"    `collections` json NULL,"
-        r"    `seals` json NULL,"
-        r"    `signatures` json NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_height`(`height`),"
-        r"    UNIQUE INDEX `uniq_block_id`(`block_id`)"
-        r");"
-    )
+    if has_table(table_name):
+        sql_utils.mysql_com(f"truncate `{table_name}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{table_name}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `height` int UNSIGNED NOT NULL,"
+            r"    `block_id` char(64) NOT NULL,"
+            r"    `parent_id` char(64) NOT NULL,"
+            r"    `timestamp` double NOT NULL,"
+            r"    `collections` json NULL,"
+            r"    `seals` json NULL,"
+            r"    `signatures` json NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_height`(`height`),"
+            r"    UNIQUE INDEX `uniq_block_id`(`block_id`)"
+            r");"
+        )
 
 
 def create_collection_table(table_name: str):
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{table_name}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `collection_id` char(64) NOT NULL,"
-        r"    `tx_ids` json NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_collection_id`(`collection_id`)"
-        r");"
-    )
+    if has_table(table_name):
+        sql_utils.mysql_com(f"truncate `{table_name}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{table_name}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `collection_id` char(64) NOT NULL,"
+            r"    `tx_ids` json NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_collection_id`(`collection_id`)"
+            r");"
+        )
 
 
 def create_transaction_table(table_name: str):
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{table_name}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `tx_id` char(64) NOT NULL,"
-        r"    `script` text NOT NULL,"
-        r"    `arguments` json NOT NULL,"
-        r"    `reference_block_id` char(64) NOT NULL,"
-        r"    `gas_limit` int UNSIGNED NOT NULL,"
-        r"    `proposal_key` json NOT NULL,"
-        r"    `payer` char(16) NOT NULL,"
-        r"    `authorizers` json NOT NULL,"
-        r"    `payload_signatures` json NOT NULL,"
-        r"    `envelope_signatures` json NOT NULL,"
-        r"    `status` tinyint UNSIGNED NOT NULL,"
-        r"    `status_code` int NOT NULL,"
-        r"    `error_message` text NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_tx_id`(`tx_id`)"
-        r");"
-    )
+    if has_table(table_name):
+        sql_utils.mysql_com(f"truncate `{table_name}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{table_name}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `tx_id` char(64) NOT NULL,"
+            r"    `script` text NOT NULL,"
+            r"    `arguments` json NOT NULL,"
+            r"    `reference_block_id` char(64) NOT NULL,"
+            r"    `gas_limit` int UNSIGNED NOT NULL,"
+            r"    `proposal_key` json NOT NULL,"
+            r"    `payer` char(16) NOT NULL,"
+            r"    `authorizers` json NOT NULL,"
+            r"    `payload_signatures` json NOT NULL,"
+            r"    `envelope_signatures` json NOT NULL,"
+            r"    `status` tinyint UNSIGNED NOT NULL,"
+            r"    `status_code` int NOT NULL,"
+            r"    `error_message` text NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_tx_id`(`tx_id`)"
+            r");"
+        )
 
 
 def create_event_table(table_name: str):
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{table_name}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `type` varchar(255) NOT NULL,"
-        r"    `tx_id` char(64) NOT NULL,"
-        r"    `tx_index` int UNSIGNED NOT NULL,"
-        r"    `event_index` int UNSIGNED NOT NULL,"
-        r"    `payload` json NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    INDEX `idx_tx_id`(`tx_id`),"
-        r"    INDEX `idx_type`(`type`)"
-        r");"
-    )
+    if has_table(table_name):
+        sql_utils.mysql_com(f"truncate `{table_name}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{table_name}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `type` varchar(255) NOT NULL,"
+            r"    `tx_id` char(64) NOT NULL,"
+            r"    `tx_index` int UNSIGNED NOT NULL,"
+            r"    `event_index` int UNSIGNED NOT NULL,"
+            r"    `payload` json NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    INDEX `idx_tx_id`(`tx_id`),"
+            r"    INDEX `idx_type`(`type`)"
+            r");"
+        )
 
 
 def create_all_tables():
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{block_table_default}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `height` int UNSIGNED NOT NULL,"
-        r"    `block_id` char(64) NOT NULL,"
-        r"    `parent_id` char(64) NOT NULL,"
-        r"    `timestamp` double NOT NULL,"
-        r"    `collections` json NULL,"
-        r"    `seals` json NULL,"
-        r"    `signatures` json NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_height`(`height`),"
-        r"    UNIQUE INDEX `uniq_block_id`(`block_id`)"
-        r");"
-    )
+    if has_table(block_table_default):
+        sql_utils.mysql_com(f"truncate `{block_table_default}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{block_table_default}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `height` int UNSIGNED NOT NULL,"
+            r"    `block_id` char(64) NOT NULL,"
+            r"    `parent_id` char(64) NOT NULL,"
+            r"    `timestamp` double NOT NULL,"
+            r"    `collections` json NULL,"
+            r"    `seals` json NULL,"
+            r"    `signatures` json NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_height`(`height`),"
+            r"    UNIQUE INDEX `uniq_block_id`(`block_id`)"
+            r");"
+        )
 
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{collection_table_default}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `collection_id` char(64) NOT NULL,"
-        r"    `tx_ids` json NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_collection_id`(`collection_id`)"
-        r");"
-    )
+    if has_table(collection_table_default):
+        sql_utils.mysql_com(f"truncate `{collection_table_default}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{collection_table_default}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `collection_id` char(64) NOT NULL,"
+            r"    `tx_ids` json NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_collection_id`(`collection_id`)"
+            r");"
+        )
 
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{tx_table_default}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `tx_id` char(64) NOT NULL,"
-        r"    `script` text NOT NULL,"
-        r"    `arguments` json NOT NULL,"
-        r"    `reference_block_id` char(64) NOT NULL,"
-        r"    `gas_limit` int UNSIGNED NOT NULL,"
-        r"    `proposal_key` json NOT NULL,"
-        r"    `payer` char(16) NOT NULL,"
-        r"    `authorizers` json NOT NULL,"
-        r"    `payload_signatures` json NOT NULL,"
-        r"    `envelope_signatures` json NOT NULL,"
-        r"    `status` tinyint UNSIGNED NOT NULL,"
-        r"    `status_code` int NOT NULL,"
-        r"    `error_message` text NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    UNIQUE INDEX `uniq_tx_id`(`tx_id`)"
-        r");"
-    )
+    if has_table(tx_table_default):
+        sql_utils.mysql_com(f"truncate `{tx_table_default}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{tx_table_default}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `tx_id` char(64) NOT NULL,"
+            r"    `script` text NOT NULL,"
+            r"    `arguments` json NOT NULL,"
+            r"    `reference_block_id` char(64) NOT NULL,"
+            r"    `gas_limit` int UNSIGNED NOT NULL,"
+            r"    `proposal_key` json NOT NULL,"
+            r"    `payer` char(16) NOT NULL,"
+            r"    `authorizers` json NOT NULL,"
+            r"    `payload_signatures` json NOT NULL,"
+            r"    `envelope_signatures` json NOT NULL,"
+            r"    `status` tinyint UNSIGNED NOT NULL,"
+            r"    `status_code` int NOT NULL,"
+            r"    `error_message` text NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    UNIQUE INDEX `uniq_tx_id`(`tx_id`)"
+            r");"
+        )
 
-    sql_utils.mysql_com(
-        f"CREATE TABLE `{event_table_default}`  ("
-        r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
-        r"    `type` varchar(255) NOT NULL,"
-        r"    `tx_id` char(64) NOT NULL,"
-        r"    `tx_index` int UNSIGNED NOT NULL,"
-        r"    `event_index` int UNSIGNED NOT NULL,"
-        r"    `payload` json NOT NULL,"
-        r"    PRIMARY KEY (`id`),"
-        r"    INDEX `idx_tx_id`(`tx_id`),"
-        r"    INDEX `idx_type`(`type`)"
-        r");"
-    )
+    if has_table(event_table_default):
+        sql_utils.mysql_com(f"truncate `{event_table_default}`;")
+    else:
+        sql_utils.mysql_com(
+            f"CREATE TABLE `{event_table_default}`  ("
+            r"    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,"
+            r"    `type` varchar(255) NOT NULL,"
+            r"    `tx_id` char(64) NOT NULL,"
+            r"    `tx_index` int UNSIGNED NOT NULL,"
+            r"    `event_index` int UNSIGNED NOT NULL,"
+            r"    `payload` json NOT NULL,"
+            r"    PRIMARY KEY (`id`),"
+            r"    INDEX `idx_tx_id`(`tx_id`),"
+            r"    INDEX `idx_type`(`type`)"
+            r");"
+        )
 
 
 def drop_table(table_name: str):
